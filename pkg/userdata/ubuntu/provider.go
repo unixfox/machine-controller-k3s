@@ -169,7 +169,7 @@ write_files:
       open-vm-tools \
       {{- end }}
 
-    cat /etc/k0s/kubeconfig | gzip -f --stdout | base64 > /etc/k0s/kubeconfig
+    cat /etc/k0s/kubeconfig | gzip -f --stdout | base64 > /etc/k0s/kubeconfig-base64
     systemctl enable --now k0s
 
 - path: "/opt/bin/supervise.sh"
@@ -190,7 +190,7 @@ write_files:
     [Service]
     KillMode=process
     Delegate=yes
-    ExecStart=/usr/bin/k0s worker --token-file /etc/k0s/kubeconfig
+    ExecStart=/usr/bin/k0s worker --token-file /etc/k0s/kubeconfig-base64
     LimitNOFILE=1048576
     LimitNPROC=infinity
     LimitCORE=infinity
@@ -198,6 +198,10 @@ write_files:
     TimeoutStartSec=0
     Restart=always
     RestartSec=5s
+    ExecStartPre=-/sbin/modprobe nf_conntrack
+    ExecStartPre=-/sbin/modprobe br_netfilter
+    ExecStartPre=-/sbin/modprobe overlay
+
 
     [Install]
     WantedBy=multi-user.target
