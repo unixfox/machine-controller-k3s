@@ -198,10 +198,7 @@ write_files:
       {{- end }}
       ipvsadm
 
-    {{ end }}
-
     gzip -c /etc/k0s/kubeconfig > /etc/k0s/kubeconfig
-
     systemctl enable --now k0s
 
 - path: "/opt/bin/supervise.sh"
