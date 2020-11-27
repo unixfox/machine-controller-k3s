@@ -149,15 +149,6 @@ write_files:
   content: |
 {{ journalDConfig | indent 4 }}
 
-- path: "/opt/load-kernel-modules.sh"
-  permissions: "0755"
-  content: |
-{{ kernelModulesScript | indent 4 }}
-
-- path: "/etc/sysctl.d/k8s.conf"
-  content: |
-{{ kernelSettings | indent 4 }}
-
 - path: "/opt/bin/setup"
   permissions: "0755"
   content: |
@@ -169,10 +160,6 @@ write_files:
 
     wget -q https://github.com/k0sproject/k0s/releases/download/v0.8.0-rc1/k0s-v0.8.0-rc1-amd64 -O /usr/bin/k0s
     chmod +x /usr/bin/k0s
-
-{{- /* As we added some modules and don't want to reboot, restart the service */}}
-    systemctl restart systemd-modules-load.service
-    sysctl --system
 
     DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install -y \
       curl \
@@ -211,8 +198,6 @@ write_files:
     TimeoutStartSec=0
     Restart=always
     RestartSec=5s
-    ExecStartPre=-/sbin/modprobe br_netfilter
-    ExecStartPre=-/sbin/modprobe overlay
 
     [Install]
     WantedBy=multi-user.target
