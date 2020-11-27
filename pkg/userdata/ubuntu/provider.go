@@ -167,19 +167,18 @@ write_files:
     if systemctl is-active ufw; then systemctl stop ufw; fi
     systemctl mask ufw
 
+    wget https://github.com/k0sproject/k0s/releases/download/v0.8.0-rc1/k0s-v0.8.0-rc1-amd64 -O /usr/bin/k0s
+    chmod +x k0s
+
+    apt-get remove -y --purge man-db
+
 {{- /* As we added some modules and don't want to reboot, restart the service */}}
     systemctl restart systemd-modules-load.service
     sysctl --system
 
     DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install -y \
       curl \
-      ca-certificates \
-      iptables \
-      kmod \
-      nfs-common \
-      linux-headers-generic \
-      wireguard-dkms \
-      util-linux \
+      wireguard \
       {{- if eq .CloudProviderName "vsphere" }}
       open-vm-tools \
       {{- end }}
@@ -195,10 +194,6 @@ write_files:
     while ! "$@"; do
       sleep 1
     done
-
-- path: "/etc/systemd/system/kubelet.service"
-  content: |
-{{ kubeletSystemdUnit .KubeletVersion .CloudProviderName .MachineSpec.Name .DNSIPs .ExternalCloudProvider .PauseImage .MachineSpec.Taints | indent 4 }}
 
 - path: "/etc/systemd/system/k0s.service"
   content: |
