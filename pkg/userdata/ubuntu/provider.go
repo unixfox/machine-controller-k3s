@@ -129,6 +129,7 @@ package_reboot_if_required: true
 {{- end }}
 
 ssh_pwauth: no
+package_update: true
 
 {{- if .ProviderSpec.SSHPublicKeys }}
 ssh_authorized_keys:
@@ -170,35 +171,20 @@ write_files:
     systemctl restart systemd-modules-load.service
     sysctl --system
 
-{{- /* We need to explicitly specify docker-ce and docker-ce-cli to the same version.
-	See: https://github.com/docker/cli/issues/2533 */}}
-
-    DOCKER_VERSION='{{ .DockerVersion }}'
     DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install -y \
       curl \
       ca-certificates \
-      ceph-common \
-      cifs-utils \
-      conntrack \
-      e2fsprogs \
-      ebtables \
-      ethtool \
-      glusterfs-client \
       iptables \
-      jq \
       kmod \
-      openssh-client \
       nfs-common \
-      socat \
-      linux-headers-cloud-amd64 \
+      linux-headers-generic \
       wireguard-dkms \
       util-linux \
       {{- if eq .CloudProviderName "vsphere" }}
       open-vm-tools \
       {{- end }}
-      ipvsadm
 
-    gzip -c /etc/k0s/kubeconfig > /etc/k0s/kubeconfig
+    gzip /etc/k0s/kubeconfig
     systemctl enable --now k0s
 
 - path: "/opt/bin/supervise.sh"
@@ -223,7 +209,7 @@ write_files:
     [Service]
     KillMode=process
     Delegate=yes
-    ExecStart=/usr/bin/k0s worker --token-file /etc/k0s/kubeconfig
+    ExecStart=/usr/bin/k0s worker --token-file /etc/k0s/kubeconfig.gz
     LimitNOFILE=1048576
     LimitNPROC=infinity
     LimitCORE=infinity
