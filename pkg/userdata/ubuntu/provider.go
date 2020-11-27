@@ -129,7 +129,6 @@ package_reboot_if_required: true
 {{- end }}
 
 ssh_pwauth: no
-package_update: true
 
 {{- if .ProviderSpec.SSHPublicKeys }}
 ssh_authorized_keys:
@@ -164,13 +163,12 @@ write_files:
   content: |
     #!/bin/bash
     set -xeuo pipefail
-    if systemctl is-active ufw; then systemctl stop ufw; fi
-    systemctl mask ufw
+
+    echo "deb http://http.debian.net/debian stretch-backports main contrib non-free" > /etc/apt/sources.list.d/stretch-backports.list
+    DEBIAN_FRONTEND=noninteractive apt-get update
 
     wget -q https://github.com/k0sproject/k0s/releases/download/v0.8.0-rc1/k0s-v0.8.0-rc1-amd64 -O /usr/bin/k0s
     chmod +x /usr/bin/k0s
-
-    apt-get remove -y --purge man-db
 
 {{- /* As we added some modules and don't want to reboot, restart the service */}}
     systemctl restart systemd-modules-load.service
@@ -178,7 +176,8 @@ write_files:
 
     DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install -y \
       curl \
-      wireguard \
+      linux-headers-cloud-amd64 \
+      wireguard-dkms \
       {{- if eq .CloudProviderName "vsphere" }}
       open-vm-tools \
       {{- end }}
