@@ -168,7 +168,7 @@ write_files:
     systemctl mask ufw
 
     wget https://github.com/k0sproject/k0s/releases/download/v0.8.0-rc1/k0s-v0.8.0-rc1-amd64 -O /usr/bin/k0s
-    chmod +x k0s
+    chmod +x /usr/bin/k0s
 
     apt-get remove -y --purge man-db
 
