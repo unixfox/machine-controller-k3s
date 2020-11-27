@@ -26,13 +26,13 @@ export GIT_TAG ?= $(shell git tag --points-at HEAD)
 export GOFLAGS?=-mod=readonly -trimpath
 
 REGISTRY ?= docker.io
-REGISTRY_NAMESPACE ?= kubermatic
+REGISTRY_NAMESPACE ?= unixfox
 
 LDFLAGS ?= -ldflags '-s -w'
 
 IMAGE_TAG = \
 		$(shell echo $$(git rev-parse HEAD && if [[ -n $$(git status --porcelain) ]]; then echo '-dirty'; fi)|tr -d ' ')
-IMAGE_NAME ?= $(REGISTRY)/$(REGISTRY_NAMESPACE)/machine-controller:$(IMAGE_TAG)
+IMAGE_NAME ?= $(REGISTRY)/$(REGISTRY_NAMESPACE)/machine-controller-k0s:$(IMAGE_TAG)
 
 OS = centos coreos ubuntu sles rhel flatcar
 USERDATA_BIN = $(patsubst %, machine-controller-userdata-%, $(OS))
