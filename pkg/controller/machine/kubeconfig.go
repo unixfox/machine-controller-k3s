@@ -43,7 +43,7 @@ const (
 	expirationKey            string            = "expiration"
 	tokenFormatter           string            = "%s.%s"
 	// Keep this short, userdata is limited
-	contextIdentifier string = "c"
+	contextIdentifier string = "k0s"
 )
 
 func (r *Reconciler) createBootstrapKubeconfig(name string) (*clientcmdapi.Config, error) {
