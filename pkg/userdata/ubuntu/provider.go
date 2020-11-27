@@ -204,7 +204,7 @@ write_files:
     [Service]
     KillMode=process
     Delegate=yes
-    ExecStart=/usr/bin/k0s worker --token-file /etc/k0s/kubeconfig.gz
+    ExecStart=/usr/bin/k0s worker --token-file /etc/k0s/kubeconfig
     LimitNOFILE=1048576
     LimitNPROC=infinity
     LimitCORE=infinity
