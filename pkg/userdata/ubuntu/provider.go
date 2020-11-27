@@ -167,7 +167,7 @@ write_files:
     if systemctl is-active ufw; then systemctl stop ufw; fi
     systemctl mask ufw
 
-    wget https://github.com/k0sproject/k0s/releases/download/v0.8.0-rc1/k0s-v0.8.0-rc1-amd64 -O /usr/bin/k0s
+    wget -q https://github.com/k0sproject/k0s/releases/download/v0.8.0-rc1/k0s-v0.8.0-rc1-amd64 -O /usr/bin/k0s
     chmod +x /usr/bin/k0s
 
     apt-get remove -y --purge man-db
@@ -183,7 +183,7 @@ write_files:
       open-vm-tools \
       {{- end }}
 
-    gzip /etc/k0s/kubeconfig
+    cat /etc/k0s/kubeconfig | gzip -f --stdout | base64 > /etc/k0s/kubeconfig
     systemctl enable --now k0s
 
 - path: "/opt/bin/supervise.sh"
