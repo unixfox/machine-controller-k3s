@@ -141,6 +141,7 @@ package_reboot_if_required: true
 {{- end }}
 
 ssh_pwauth: no
+package_update: true
 
 swap:
   filename: /swap.img
