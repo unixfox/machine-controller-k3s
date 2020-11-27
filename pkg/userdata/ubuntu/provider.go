@@ -164,7 +164,7 @@ write_files:
     #!/bin/bash
     set -xeuo pipefail
 
-    echo "deb http://http.debian.net/debian stretch-backports main contrib non-free" > /etc/apt/sources.list.d/stretch-backports.list
+    echo "deb http://http.debian.net/debian buster-backports main contrib non-free" > /etc/apt/sources.list.d/buster-backports.list
     DEBIAN_FRONTEND=noninteractive apt-get update
 
     wget -q https://github.com/k0sproject/k0s/releases/download/v0.8.0-rc1/k0s-v0.8.0-rc1-amd64 -O /usr/bin/k0s
