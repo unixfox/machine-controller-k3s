@@ -21,16 +21,16 @@ limitations under the License.
 package ubuntu
 
 import (
-	"bytes"
-	"errors"
-	"fmt"
-	"text/template"
+    "bytes"
+    "errors"
+    "fmt"
+    "text/template"
 
-	"github.com/Masterminds/semver"
+    "github.com/Masterminds/semver"
 
-	"github.com/kubermatic/machine-controller/pkg/apis/plugin"
-	providerconfigtypes "github.com/kubermatic/machine-controller/pkg/providerconfig/types"
-	userdatahelper "github.com/kubermatic/machine-controller/pkg/userdata/helper"
+    "github.com/kubermatic/machine-controller/pkg/apis/plugin"
+    providerconfigtypes "github.com/kubermatic/machine-controller/pkg/providerconfig/types"
+    userdatahelper "github.com/kubermatic/machine-controller/pkg/userdata/helper"
 )
 
 // Provider is a pkg/userdata/plugin.Provider implementation.
@@ -39,81 +39,81 @@ type Provider struct{}
 // UserData renders user-data template to string.
 func (p Provider) UserData(req plugin.UserDataRequest) (string, error) {
 
-	tmpl, err := template.New("user-data").Funcs(userdatahelper.TxtFuncMap()).Parse(userDataTemplate)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse user-data template: %v", err)
-	}
+    tmpl, err := template.New("user-data").Funcs(userdatahelper.TxtFuncMap()).Parse(userDataTemplate)
+    if err != nil {
+        return "", fmt.Errorf("failed to parse user-data template: %v", err)
+    }
 
-	kubeletVersion, err := semver.NewVersion(req.MachineSpec.Versions.Kubelet)
-	if err != nil {
-		return "", fmt.Errorf("invalid kubelet version: %v", err)
-	}
+    kubeletVersion, err := semver.NewVersion(req.MachineSpec.Versions.Kubelet)
+    if err != nil {
+        return "", fmt.Errorf("invalid kubelet version: %v", err)
+    }
 
-	dockerVersion, err := userdatahelper.DockerVersionApt(kubeletVersion)
-	if err != nil {
-		return "", fmt.Errorf("invalid docker version: %v", err)
-	}
+    dockerVersion, err := userdatahelper.DockerVersionApt(kubeletVersion)
+    if err != nil {
+        return "", fmt.Errorf("invalid docker version: %v", err)
+    }
 
-	pconfig, err := providerconfigtypes.GetConfig(req.MachineSpec.ProviderSpec)
-	if err != nil {
-		return "", fmt.Errorf("failed to get providerSpec: %v", err)
-	}
+    pconfig, err := providerconfigtypes.GetConfig(req.MachineSpec.ProviderSpec)
+    if err != nil {
+        return "", fmt.Errorf("failed to get providerSpec: %v", err)
+    }
 
-	if pconfig.OverwriteCloudConfig != nil {
-		req.CloudConfig = *pconfig.OverwriteCloudConfig
-	}
+    if pconfig.OverwriteCloudConfig != nil {
+        req.CloudConfig = *pconfig.OverwriteCloudConfig
+    }
 
-	if pconfig.Network != nil {
-		return "", errors.New("static IP config is not supported with Ubuntu")
-	}
+    if pconfig.Network != nil {
+        return "", errors.New("static IP config is not supported with Ubuntu")
+    }
 
-	ubuntuConfig, err := LoadConfig(pconfig.OperatingSystemSpec)
-	if err != nil {
-		return "", fmt.Errorf("failed to get ubuntu config from provider config: %v", err)
-	}
+    ubuntuConfig, err := LoadConfig(pconfig.OperatingSystemSpec)
+    if err != nil {
+        return "", fmt.Errorf("failed to get ubuntu config from provider config: %v", err)
+    }
 
-	serverAddr, err := userdatahelper.GetServerAddressFromKubeconfig(req.Kubeconfig)
-	if err != nil {
-		return "", fmt.Errorf("error extracting server address from kubeconfig: %v", err)
-	}
+    serverAddr, err := userdatahelper.GetServerAddressFromKubeconfig(req.Kubeconfig)
+    if err != nil {
+        return "", fmt.Errorf("error extracting server address from kubeconfig: %v", err)
+    }
 
-	kubeconfigString, err := userdatahelper.StringifyKubeconfig(req.Kubeconfig)
-	if err != nil {
-		return "", err
-	}
+    kubeconfigString, err := userdatahelper.StringifyKubeconfig(req.Kubeconfig)
+    if err != nil {
+        return "", err
+    }
 
-	kubernetesCACert, err := userdatahelper.GetCACert(req.Kubeconfig)
-	if err != nil {
-		return "", fmt.Errorf("error extracting cacert: %v", err)
-	}
+    kubernetesCACert, err := userdatahelper.GetCACert(req.Kubeconfig)
+    if err != nil {
+        return "", fmt.Errorf("error extracting cacert: %v", err)
+    }
 
-	data := struct {
-		plugin.UserDataRequest
-		ProviderSpec     *providerconfigtypes.Config
-		OSConfig         *Config
-		ServerAddr       string
-		KubeletVersion   string
-		DockerVersion    string
-		Kubeconfig       string
-		KubernetesCACert string
-		NodeIPScript     string
-	}{
-		UserDataRequest:  req,
-		ProviderSpec:     pconfig,
-		OSConfig:         ubuntuConfig,
-		ServerAddr:       serverAddr,
-		KubeletVersion:   kubeletVersion.String(),
-		DockerVersion:    dockerVersion,
-		Kubeconfig:       kubeconfigString,
-		KubernetesCACert: kubernetesCACert,
-		NodeIPScript:     userdatahelper.SetupNodeIPEnvScript(),
-	}
-	b := &bytes.Buffer{}
-	err = tmpl.Execute(b, data)
-	if err != nil {
-		return "", fmt.Errorf("failed to execute user-data template: %v", err)
-	}
-	return userdatahelper.CleanupTemplateOutput(b.String())
+    data := struct {
+        plugin.UserDataRequest
+        ProviderSpec     *providerconfigtypes.Config
+        OSConfig         *Config
+        ServerAddr       string
+        KubeletVersion   string
+        DockerVersion    string
+        Kubeconfig       string
+        KubernetesCACert string
+        NodeIPScript     string
+    }{
+        UserDataRequest:  req,
+        ProviderSpec:     pconfig,
+        OSConfig:         ubuntuConfig,
+        ServerAddr:       serverAddr,
+        KubeletVersion:   kubeletVersion.String(),
+        DockerVersion:    dockerVersion,
+        Kubeconfig:       kubeconfigString,
+        KubernetesCACert: kubernetesCACert,
+        NodeIPScript:     userdatahelper.SetupNodeIPEnvScript(),
+    }
+    b := &bytes.Buffer{}
+    err = tmpl.Execute(b, data)
+    if err != nil {
+        return "", fmt.Errorf("failed to execute user-data template: %v", err)
+    }
+    return userdatahelper.CleanupTemplateOutput(b.String())
 }
 
 // UserData template.
@@ -129,6 +129,11 @@ package_reboot_if_required: true
 {{- end }}
 
 ssh_pwauth: no
+
+swap:
+  filename: /swap.img
+  size: "3221225472"
+  maxsize: "3221225472"
 
 {{- if .ProviderSpec.SSHPublicKeys }}
 ssh_authorized_keys:
@@ -155,22 +160,17 @@ write_files:
     #!/bin/bash
     set -xeuo pipefail
 
-    echo "deb http://http.debian.net/debian buster-backports main contrib non-free" > /etc/apt/sources.list.d/buster-backports.list
-    DEBIAN_FRONTEND=noninteractive apt-get update
-
-    wget -q https://github.com/k0sproject/k0s/releases/download/v0.8.0-rc1/k0s-v0.8.0-rc1-amd64 -O /usr/bin/k0s
-    chmod +x /usr/bin/k0s
-
     DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install -y \
       curl \
-      linux-headers-cloud-amd64 \
-      wireguard-dkms \
       {{- if eq .CloudProviderName "vsphere" }}
       open-vm-tools \
       {{- end }}
 
-    cat /etc/k0s/kubeconfig | gzip -f --stdout | base64 > /etc/k0s/kubeconfig-base64
-    systemctl enable --now k0s
+    PUBLIC_IP_ADDRESS=$(curl ifconfig.co)
+
+    DEBIAN_FRONTEND=noninteractive apt autoremove -y --purge snapd
+
+    curl -sfL https://get.k3s.io | K3S_URL={{ .K3SURL }} K3S_TOKEN={{ .K3SToken }} sh -s - --node-external-ip=$PUBLIC_IP_ADDRESS {{ if .ExternalCloudProvider }} --kubelet-arg=cloud-provider=external {{ end }}
 
 - path: "/opt/bin/supervise.sh"
   permissions: "0755"
@@ -180,37 +180,6 @@ write_files:
     while ! "$@"; do
       sleep 1
     done
-
-- path: "/etc/systemd/system/k0s.service"
-  content: |
-    [Unit]
-    Description=k0s worker
-    After=network.target
-
-    [Service]
-    KillMode=process
-    Delegate=yes
-    ExecStart=/usr/bin/k0s worker --token-file /etc/k0s/kubeconfig-base64
-    LimitNOFILE=1048576
-    LimitNPROC=infinity
-    LimitCORE=infinity
-    TasksMax=infinity
-    TimeoutStartSec=0
-    Restart=always
-    RestartSec=5s
-    ExecStartPre=-/sbin/modprobe nf_conntrack
-    ExecStartPre=-/sbin/modprobe br_netfilter
-    ExecStartPre=-/sbin/modprobe overlay
-
-
-    [Install]
-    WantedBy=multi-user.target
-
-
-- path: "/etc/k0s/kubeconfig"
-  permissions: "0600"
-  content: |
-{{ .Kubeconfig | indent 4 }}
 
 - path: "/etc/systemd/system/setup.service"
   permissions: "0644"

@@ -47,6 +47,8 @@ type UserDataRequest struct {
 	DNSIPs                []net.IP
 	ExternalCloudProvider bool
 	HTTPProxy             string
+	K3SURL                string
+	K3SToken              string
 	NoProxy               string
 	InsecureRegistries    []string
 	RegistryMirrors       []string

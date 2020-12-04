@@ -116,6 +116,8 @@ type NodeSettings struct {
 	ClusterDNSIPs []net.IP
 	// If set, this proxy will be configured on all nodes.
 	HTTPProxy string
+	K3SURL string
+	K3SToken string
 	// If set this will be set as NO_PROXY on the node.
 	NoProxy string
 	// If set, those registries will be configured as insecure on the container runtime.
@@ -695,6 +697,8 @@ func (r *Reconciler) ensureInstanceExistsForMachine(
 				KubeletFeatureGates:   r.nodeSettings.KubeletFeatureGates,
 				NoProxy:               r.nodeSettings.NoProxy,
 				HTTPProxy:             r.nodeSettings.HTTPProxy,
+				K3SToken:              r.nodeSettings.K3SToken,
+				K3SURL:                r.nodeSettings.K3SURL,
 			}
 			userdata, err := userdataPlugin.UserData(req)
 			if err != nil {

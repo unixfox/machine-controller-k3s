@@ -78,6 +78,8 @@ var (
 	nodeCSRApprover                  bool
 
 	nodeHTTPProxy           string
+	nodeK3SToken            string
+	nodeK3SURL              string
 	nodeNoProxy             string
 	nodeInsecureRegistries  string
 	nodeRegistryMirrors     string
@@ -164,6 +166,8 @@ func main() {
 	flag.BoolVar(&externalCloudProvider, "external-cloud-provider", false, "when set, kubelets will receive --cloud-provider=external flag")
 	flag.DurationVar(&skipEvictionAfter, "skip-eviction-after", 2*time.Hour, "Skips the eviction if a machine is not gone after the specified duration.")
 	flag.StringVar(&nodeHTTPProxy, "node-http-proxy", "", "If set, it configures the 'HTTP_PROXY' & 'HTTPS_PROXY' environment variable on the nodes.")
+	flag.StringVar(&nodeK3SToken, "node-k3s-token", "", "Set the K3S token")
+	flag.StringVar(&nodeK3SURL, "node-k3s-url", "", "Set the K3S URL")
 	flag.StringVar(&nodeNoProxy, "node-no-proxy", ".svc,.cluster.local,localhost,127.0.0.1", "If set, it configures the 'NO_PROXY' environment variable on the nodes.")
 	flag.StringVar(&nodeInsecureRegistries, "node-insecure-registries", "", "Comma separated list of registries which should be configured as insecure on the container runtime")
 	flag.StringVar(&nodeRegistryMirrors, "node-registry-mirrors", "", "Comma separated list of Docker image mirrors")
@@ -268,6 +272,8 @@ func main() {
 		node: machinecontroller.NodeSettings{
 			ClusterDNSIPs:       clusterDNSIPs,
 			HTTPProxy:           nodeHTTPProxy,
+			K3SURL:              nodeK3SURL,
+			K3SToken:            nodeK3SToken,
 			NoProxy:             nodeNoProxy,
 			HyperkubeImage:      nodeHyperkubeImage,
 			KubeletRepository:   nodeKubeletRepository,
