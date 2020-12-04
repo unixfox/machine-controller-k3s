@@ -699,12 +699,9 @@ func (r *Reconciler) ensureInstanceExistsForMachine(
 				KubeletFeatureGates:   r.nodeSettings.KubeletFeatureGates,
 				NoProxy:               r.nodeSettings.NoProxy,
 				HTTPProxy:             r.nodeSettings.HTTPProxy,
-<<<<<<< HEAD
 				K3SToken:              r.nodeSettings.K3SToken,
 				K3SURL:                r.nodeSettings.K3SURL,
-=======
 				ContainerRuntime:      r.nodeSettings.ContainerRuntime,
->>>>>>> 3da78268 (Containerd support (#871))
 			}
 
 			userdata, err := userdataPlugin.UserData(req)
