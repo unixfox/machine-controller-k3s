@@ -401,9 +401,9 @@ func (p *provider) Validate(spec v1alpha1.MachineSpec) error {
 	}
 
 	// Required fields
-	if _, err := getRegion(client, c.Region); err != nil {
-		return fmt.Errorf("failed to get region %q: %v", c.Region, err)
-	}
+	// if _, err := getRegion(client, c.Region); err != nil {
+	// 	return fmt.Errorf("failed to get region %q: %v", c.Region, err)
+	// }
 
 	image, err := getImageByName(client, c.Region, c.Image)
 	if err != nil {
