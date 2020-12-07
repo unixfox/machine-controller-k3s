@@ -310,7 +310,7 @@ func main() {
 	{
 		prometheusRegistry.MustRegister(machinecontroller.NewMachineCollector(ctx, ctrlruntimeClient))
 
-		s := createUtilHTTPServer(kubeClient, kubeconfigProvider, prometheus.DefaultGatherer)
+		s := createUtilHTTPServer(ctx, kubeClient, kubeconfigProvider, prometheus.DefaultGatherer)
 		g.Add(func() error {
 			return s.ListenAndServe()
 		}, func(err error) {
@@ -489,11 +489,11 @@ func startControllerViaLeaderElection(runOptions controllerRunOptions) error {
 }
 
 // createUtilHTTPServer creates a new HTTP server
-func createUtilHTTPServer(kubeClient kubernetes.Interface, kubeconfigProvider machinecontroller.KubeconfigProvider, prometheusGatherer prometheus.Gatherer) *http.Server {
+func createUtilHTTPServer(ctx context.Context, kubeClient kubernetes.Interface, kubeconfigProvider machinecontroller.KubeconfigProvider, prometheusGatherer prometheus.Gatherer) *http.Server {
 	health := healthcheck.NewHandler()
-	health.AddReadinessCheck("apiserver-connection", machinehealth.ApiserverReachable(kubeClient))
+	health.AddReadinessCheck("apiserver-connection", machinehealth.ApiserverReachable(ctx, kubeClient))
 
-	for name, c := range readinessChecks(kubeconfigProvider) {
+	for name, c := range readinessChecks(ctx, kubeconfigProvider) {
 		health.AddReadinessCheck(name, c)
 	}
 
@@ -517,10 +517,10 @@ func createUtilHTTPServer(kubeClient kubernetes.Interface, kubeconfigProvider ma
 	}
 }
 
-func readinessChecks(kubeconfigProvider machinecontroller.KubeconfigProvider) map[string]healthcheck.Check {
+func readinessChecks(ctx context.Context, kubeconfigProvider machinecontroller.KubeconfigProvider) map[string]healthcheck.Check {
 	return map[string]healthcheck.Check{
 		"valid-info-kubeconfig": func() error {
-			cm, err := kubeconfigProvider.GetKubeconfig()
+			cm, err := kubeconfigProvider.GetKubeconfig(ctx)
 			if err != nil {
 				klog.V(2).Infof("[healthcheck] Unable to get kubeconfig: %v", err)
 				return err
