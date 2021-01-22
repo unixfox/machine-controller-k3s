@@ -21,10 +21,10 @@ limitations under the License.
 package ubuntu
 
 import (
-    "bytes"
-    "errors"
-    "fmt"
-    "text/template"
+	"errors"
+	"fmt"
+	"strings"
+	"text/template"
 
     "github.com/Masterminds/semver"
 
@@ -38,82 +38,94 @@ type Provider struct{}
 
 // UserData renders user-data template to string.
 func (p Provider) UserData(req plugin.UserDataRequest) (string, error) {
+	tmpl, err := template.New("user-data").Funcs(userdatahelper.TxtFuncMap()).Parse(userDataTemplate)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse user-data template: %v", err)
+	}
 
-    tmpl, err := template.New("user-data").Funcs(userdatahelper.TxtFuncMap()).Parse(userDataTemplate)
-    if err != nil {
-        return "", fmt.Errorf("failed to parse user-data template: %v", err)
-    }
+	kubeletVersion, err := semver.NewVersion(req.MachineSpec.Versions.Kubelet)
+	if err != nil {
+		return "", fmt.Errorf("invalid kubelet version: %v", err)
+	}
 
-    kubeletVersion, err := semver.NewVersion(req.MachineSpec.Versions.Kubelet)
-    if err != nil {
-        return "", fmt.Errorf("invalid kubelet version: %v", err)
-    }
+	pconfig, err := providerconfigtypes.GetConfig(req.MachineSpec.ProviderSpec)
+	if err != nil {
+		return "", fmt.Errorf("failed to get providerSpec: %v", err)
+	}
 
-    dockerVersion, err := userdatahelper.DockerVersionApt(kubeletVersion)
-    if err != nil {
-        return "", fmt.Errorf("invalid docker version: %v", err)
-    }
+	if pconfig.OverwriteCloudConfig != nil {
+		req.CloudConfig = *pconfig.OverwriteCloudConfig
+	}
 
-    pconfig, err := providerconfigtypes.GetConfig(req.MachineSpec.ProviderSpec)
-    if err != nil {
-        return "", fmt.Errorf("failed to get providerSpec: %v", err)
-    }
+	if pconfig.Network != nil {
+		return "", errors.New("static IP config is not supported with Ubuntu")
+	}
 
-    if pconfig.OverwriteCloudConfig != nil {
-        req.CloudConfig = *pconfig.OverwriteCloudConfig
-    }
+	ubuntuConfig, err := LoadConfig(pconfig.OperatingSystemSpec)
+	if err != nil {
+		return "", fmt.Errorf("failed to get ubuntu config from provider config: %v", err)
+	}
 
-    if pconfig.Network != nil {
-        return "", errors.New("static IP config is not supported with Ubuntu")
-    }
+	serverAddr, err := userdatahelper.GetServerAddressFromKubeconfig(req.Kubeconfig)
+	if err != nil {
+		return "", fmt.Errorf("error extracting server address from kubeconfig: %v", err)
+	}
 
-    ubuntuConfig, err := LoadConfig(pconfig.OperatingSystemSpec)
-    if err != nil {
-        return "", fmt.Errorf("failed to get ubuntu config from provider config: %v", err)
-    }
+	kubeconfigString, err := userdatahelper.StringifyKubeconfig(req.Kubeconfig)
+	if err != nil {
+		return "", err
+	}
 
-    serverAddr, err := userdatahelper.GetServerAddressFromKubeconfig(req.Kubeconfig)
-    if err != nil {
-        return "", fmt.Errorf("error extracting server address from kubeconfig: %v", err)
-    }
+	kubernetesCACert, err := userdatahelper.GetCACert(req.Kubeconfig)
+	if err != nil {
+		return "", fmt.Errorf("error extracting cacert: %v", err)
+	}
 
-    kubeconfigString, err := userdatahelper.StringifyKubeconfig(req.Kubeconfig)
-    if err != nil {
-        return "", err
-    }
+	crEngine := req.ContainerRuntime.Engine(kubeletVersion)
+	crScript, err := crEngine.ScriptFor(providerconfigtypes.OperatingSystemUbuntu)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate container runtime install script: %w", err)
+	}
 
-    kubernetesCACert, err := userdatahelper.GetCACert(req.Kubeconfig)
-    if err != nil {
-        return "", fmt.Errorf("error extracting cacert: %v", err)
-    }
+	crConfig, err := crEngine.Config()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate container runtime config: %w", err)
+	}
 
-    data := struct {
-        plugin.UserDataRequest
-        ProviderSpec     *providerconfigtypes.Config
-        OSConfig         *Config
-        ServerAddr       string
-        KubeletVersion   string
-        DockerVersion    string
-        Kubeconfig       string
-        KubernetesCACert string
-        NodeIPScript     string
-    }{
-        UserDataRequest:  req,
-        ProviderSpec:     pconfig,
-        OSConfig:         ubuntuConfig,
-        ServerAddr:       serverAddr,
-        KubeletVersion:   kubeletVersion.String(),
-        DockerVersion:    dockerVersion,
-        Kubeconfig:       kubeconfigString,
-        KubernetesCACert: kubernetesCACert,
-        NodeIPScript:     userdatahelper.SetupNodeIPEnvScript(),
-    }
-    b := &bytes.Buffer{}
-    err = tmpl.Execute(b, data)
-    if err != nil {
-        return "", fmt.Errorf("failed to execute user-data template: %v", err)
-    }
-    return userdatahelper.CleanupTemplateOutput(b.String())
+	data := struct {
+		plugin.UserDataRequest
+		ProviderSpec                   *providerconfigtypes.Config
+		OSConfig                       *Config
+		ServerAddr                     string
+		KubeletVersion                 string
+		Kubeconfig                     string
+		KubernetesCACert               string
+		NodeIPScript                   string
+		ExtraKubeletFlags              []string
+		ContainerRuntimeScript         string
+		ContainerRuntimeConfigFileName string
+		ContainerRuntimeConfig         string
+	}{
+		UserDataRequest:                req,
+		ProviderSpec:                   pconfig,
+		OSConfig:                       ubuntuConfig,
+		ServerAddr:                     serverAddr,
+		KubeletVersion:                 kubeletVersion.String(),
+		Kubeconfig:                     kubeconfigString,
+		KubernetesCACert:               kubernetesCACert,
+		NodeIPScript:                   userdatahelper.SetupNodeIPEnvScript(),
+		ExtraKubeletFlags:              crEngine.KubeletFlags(),
+		ContainerRuntimeScript:         crScript,
+		ContainerRuntimeConfigFileName: crEngine.ConfigFileName(),
+		ContainerRuntimeConfig:         crConfig,
+	}
+
+	var buf strings.Builder
+	if err = tmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("failed to execute user-data template: %w", err)
+	}
+
+	return userdatahelper.CleanupTemplateOutput(buf.String())
 }
 
 // UserData template.

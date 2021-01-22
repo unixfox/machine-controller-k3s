@@ -24,6 +24,7 @@ import (
 	"net"
 
 	clusterv1alpha1 "github.com/kubermatic/machine-controller/pkg/apis/cluster/v1alpha1"
+	"github.com/kubermatic/machine-controller/pkg/containerruntime"
 
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
@@ -50,12 +51,11 @@ type UserDataRequest struct {
 	K3SURL                string
 	K3SToken              string
 	NoProxy               string
-	InsecureRegistries    []string
-	RegistryMirrors       []string
 	PauseImage            string
 	HyperkubeImage        string
 	KubeletRepository     string
 	KubeletFeatureGates   map[string]bool
+	ContainerRuntime      containerruntime.Config
 }
 
 // UserDataResponse contains the responded user data.
